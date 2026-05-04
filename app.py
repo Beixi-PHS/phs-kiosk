@@ -37,7 +37,7 @@ AZURE_CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
 ONEDRIVE_FILE_ID    = os.environ.get("ONEDRIVE_FILE_ID")
 ONEDRIVE_USER_ID    = os.environ.get("ONEDRIVE_USER_ID")
 DOWNLOAD_SECRET     = os.environ.get("DOWNLOAD_SECRET", "phs2026")
-WORKSHEET_NAME      = os.environ.get("WORKSHEET_NAME", "Feedback Responses")
+WORKSHEET_NAME      = os.environ.get("WORKSHEET_NAME", "In Clinic Feedback")
 
 RATING_LABELS = {1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent"}
 
@@ -126,7 +126,7 @@ def append_local(therapist, rating, timestamp_str):
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
-    path = Path("responses_local.xlsx")
+    path = Path("in_clinic_feedback_local.xlsx")
     try:
         ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
     except Exception:
@@ -256,7 +256,7 @@ def dashboard():
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PHS Feedback Dashboard</title>
+<title>PHS In Clinic Feedback Dashboard</title>
 <style>
 body{{font-family:'Segoe UI',sans-serif;background:#f9f8f6;color:#2A435F;margin:0;padding:32px}}
 h1{{font-size:28px;font-weight:300;margin-bottom:4px}}
@@ -275,7 +275,7 @@ td{{padding:12px 16px;font-size:14px;border-bottom:1px solid #eee}}
 tr:last-child td{{border-bottom:none}}
 h2{{font-size:18px;font-weight:400;margin-bottom:12px}}
 </style></head><body>
-<h1>PHS Feedback Dashboard</h1>
+<h1>PHS In Clinic Feedback Dashboard</h1>
 <p class="sub">Updated in real time · {datetime.now().strftime('%d %b %Y %H:%M')}</p>
 <p class="store">✓ {storage}</p>
 <div class="stats">
