@@ -1,20 +1,21 @@
 """
-PHS Patient Feedback Kiosk Ã¢ÂÂ Backend
+PHS Patient Feedback Kiosk ÃÂ¢ÃÂÃÂ Backend
 =====================================
 Serves the kiosk frontend and records every submission
 directly to an Excel file in Microsoft OneDrive via the
-Microsoft Graph API. Data is permanent Ã¢ÂÂ no local file,
+Microsoft Graph API. Data is permanent ÃÂ¢ÃÂÃÂ no local file,
 no data loss risk, no weekly downloads required.
 
 Endpoints:
-  GET  /           Ã¢ÂÂ Serves the kiosk HTML
-  POST /submit     Ã¢ÂÂ Records feedback to OneDrive Excel
-  GET  /dashboard  Ã¢ÂÂ Password-protected live summary
-  GET  /health     Ã¢ÂÂ Service status
+  GET  /           ÃÂ¢ÃÂÃÂ Serves the kiosk HTML
+  POST /submit     ÃÂ¢ÃÂÃÂ Records feedback to OneDrive Excel
+  GET  /dashboard  ÃÂ¢ÃÂÃÂ Password-protected live summary
+  GET  /health     ÃÂ¢ÃÂÃÂ Service status
 """
 
 import os
 import logging
+import threading
 import requests
 from datetime import datetime, timezone
 try:
@@ -24,7 +25,7 @@ except ImportError:
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file, abort
 
-# Ã¢ÂÂÃ¢ÂÂ Logging Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Logging ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -34,7 +35,7 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='.', template_folder='.')
 
-# Ã¢ÂÂÃ¢ÂÂ Configuration (set as environment variables in Render.com) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Configuration (set as environment variables in Render.com) ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 AZURE_TENANT_ID     = os.environ.get("AZURE_TENANT_ID")
 AZURE_CLIENT_ID     = os.environ.get("AZURE_CLIENT_ID")
 AZURE_CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
@@ -46,14 +47,21 @@ WORKSHEET_NAME      = os.environ.get("WORKSHEET_NAME", "In Clinic Feedback")
 RATING_LABELS = {1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent"}
 
 
-# Ã¢ÂÂÃ¢ÂÂ Microsoft Graph helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Microsoft Graph helpers ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
 def is_graph_configured():
     return all([AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
                 ONEDRIVE_FILE_ID, ONEDRIVE_USER_ID])
 
 
+# Token cache — avoids an Azure round-trip on every submission (token valid 1 hr)
+_token_cache = {"token": None, "expires_at": 0}
+
 def get_access_token():
+    import time
+    now = time.time()
+    if _token_cache["token"] and now < _token_cache["expires_at"]:
+        return _token_cache["token"]
     url = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token"
     res = requests.post(url, data={
         "grant_type":    "client_credentials",
@@ -62,7 +70,11 @@ def get_access_token():
         "scope":         "https://graph.microsoft.com/.default"
     }, timeout=10)
     res.raise_for_status()
-    return res.json()["access_token"]
+    data = res.json()
+    _token_cache["token"] = data["access_token"]
+    _token_cache["expires_at"] = time.time() + data.get("expires_in", 3600) - 300
+    log.info("Access token refreshed.")
+    return _token_cache["token"]
 
 
 def graph_headers(token):
@@ -122,10 +134,10 @@ def append_to_onedrive(therapist, location, rating, timestamp_str):
         RATING_LABELS.get(rating, str(rating))
     ]], start_row=next_row)
 
-    log.info(f"Recorded to OneDrive: {therapist} Ã¢ÂÂ {rating} stars")
+    log.info(f"Recorded to OneDrive: {therapist} ÃÂ¢ÃÂÃÂ {rating} stars")
 
 
-# Ã¢ÂÂÃ¢ÂÂ Local fallback (dev / unconfigured) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Local fallback (dev / unconfigured) ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
 def append_local(therapist, location, rating, timestamp_str):
     from openpyxl import Workbook, load_workbook
@@ -170,10 +182,10 @@ def append_local(therapist, location, rating, timestamp_str):
         if fill: c.fill = fill
     ws.row_dimensions[r].height = 22
     wb.save(path)
-    log.info(f"[LOCAL] Recorded: {therapist} Ã¢ÂÂ {rating} stars")
+    log.info(f"[LOCAL] Recorded: {therapist} ÃÂ¢ÃÂÃÂ {rating} stars")
 
 
-# Ã¢ÂÂÃ¢ÂÂ Routes Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Routes ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
 @app.route("/")
 def index():
@@ -191,23 +203,22 @@ def submit():
     if not therapist:
         return jsonify({"error": "Therapist is required"}), 400
     if not isinstance(rating, int) or rating not in range(1, 6):
-        return jsonify({"error": "Rating must be 1Ã¢ÂÂ5"}), 400
+        return jsonify({"error": "Rating must be 1ÃÂ¢ÃÂÃÂ5"}), 400
 
-    try:
-        if is_graph_configured():
-            append_to_onedrive(therapist, location, rating, timestamp)
-            storage = "onedrive"
-        else:
-            log.warning("Graph API not configured Ã¢ÂÂ using local fallback.")
-            append_local(therapist, location, rating, timestamp)
-            storage = "local"
+    def _record():
+        try:
+            if is_graph_configured():
+                append_to_onedrive(therapist, location, rating, timestamp)
+                log.info(f"Background write OK (onedrive): {therapist}")
+            else:
+                log.warning("Graph API not configured — using local fallback.")
+                append_local(therapist, location, rating, timestamp)
+                log.info(f"Background write OK (local): {therapist}")
+        except Exception as e:
+            log.error(f"Background submit failed: {e}")
 
-        return jsonify({"status": "success", "therapist": therapist,
-                        "rating": rating, "storage": storage}), 200
-
-    except Exception as e:
-        log.error(f"Submit failed: {e}")
-        return jsonify({"error": "Failed to record Ã¢ÂÂ please try again"}), 500
+    threading.Thread(target=_record, daemon=True).start()
+    return jsonify({"status": "accepted", "therapist": therapist, "rating": rating}), 202
 
 
 @app.route("/dashboard")
@@ -227,9 +238,9 @@ def dashboard():
             all_rows = res.json().get("values", [])
             for row in all_rows[1:]:
                 if len(row) >= 5 and row[3]:
-                    rows.append({"date": row[1] or "Ã¢ÂÂ", "time": row[2] or "Ã¢ÂÂ",
+                    rows.append({"date": row[1] or "ÃÂ¢ÃÂÃÂ", "time": row[2] or "ÃÂ¢ÃÂÃÂ",
                                  "clinic": row[3], "therapist": row[4], "rating": int(row[5] or 0),
-                                 "label": row[6] if len(row) > 6 else "Ã¢ÂÂ"})
+                                 "label": row[6] if len(row) > 6 else "ÃÂ¢ÃÂÃÂ"})
         except Exception as e:
             log.error(f"Dashboard fetch error: {e}")
 
@@ -249,7 +260,7 @@ def dashboard():
         f"<tr><td>{n}</td><td>{s['count']}</td>"
         f"<td>{round(s['total']/s['count'],1)}</td>"
         f"<td style='color:#b8963e;letter-spacing:2px'>"
-        f"{'Ã¢ÂÂ'*int(round(s['total']/s['count']))}{'Ã¢ÂÂ'*(5-int(round(s['total']/s['count'])))}"
+        f"{'ÃÂ¢ÃÂÃÂ'*int(round(s['total']/s['count']))}{'ÃÂ¢ÃÂÃÂ'*(5-int(round(s['total']/s['count'])))}"
         f"</td></tr>"
         for n, s in sorted(t_stats.items())
     ) or "<tr><td colspan='4' style='text-align:center;color:#aaa'>No data yet</td></tr>"
@@ -257,7 +268,7 @@ def dashboard():
     r_rows = "".join(
         f"<tr><td>{r['date']}</td><td>{r['time']}</td><td>{r['therapist']}</td>"
         f"<td>{r['rating']}/5</td>"
-        f"<td style='color:#b8963e'>{'Ã¢ÂÂ'*r['rating']}{'Ã¢ÂÂ'*(5-r['rating'])}</td></tr>"
+        f"<td style='color:#b8963e'>{'ÃÂ¢ÃÂÃÂ'*r['rating']}{'ÃÂ¢ÃÂÃÂ'*(5-r['rating'])}</td></tr>"
         for r in reversed(rows[-20:])
     ) or "<tr><td colspan='5' style='text-align:center;color:#aaa'>No responses yet</td></tr>"
 
@@ -284,8 +295,8 @@ tr:last-child td{{border-bottom:none}}
 h2{{font-size:18px;font-weight:400;margin-bottom:12px}}
 </style></head><body>
 <h1>PHS In Clinic Feedback Dashboard</h1>
-<p class="sub">Updated in real time ÃÂ· {datetime.now().strftime('%d %b %Y %H:%M')}</p>
-<p class="store">Ã¢ÂÂ {storage}</p>
+<p class="sub">Updated in real time ÃÂÃÂ· {datetime.now().strftime('%d %b %Y %H:%M')}</p>
+<p class="store">ÃÂ¢ÃÂÃÂ {storage}</p>
 <div class="stats">
   <div class="stat"><div class="num">{total}</div><div class="lbl">Total Responses</div></div>
   <div class="stat"><div class="num">{avg}</div><div class="lbl">Average Rating</div></div>
