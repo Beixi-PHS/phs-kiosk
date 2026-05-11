@@ -1,16 +1,16 @@
 """
-PHS Patient Feedback Kiosk â Backend
+PHS Patient Feedback Kiosk Ã¢ÂÂ Backend
 =====================================
 Serves the kiosk frontend and records every submission
 directly to an Excel file in Microsoft OneDrive via the
-Microsoft Graph API. Data is permanent â no local file,
+Microsoft Graph API. Data is permanent Ã¢ÂÂ no local file,
 no data loss risk, no weekly downloads required.
 
 Endpoints:
-  GET  /           â Serves the kiosk HTML
-  POST /submit     â Records feedback to OneDrive Excel
-  GET  /dashboard  â Password-protected live summary
-  GET  /health     â Service status
+  GET  /           Ã¢ÂÂ Serves the kiosk HTML
+  POST /submit     Ã¢ÂÂ Records feedback to OneDrive Excel
+  GET  /dashboard  Ã¢ÂÂ Password-protected live summary
+  GET  /health     Ã¢ÂÂ Service status
 """
 
 import os
@@ -24,7 +24,7 @@ except ImportError:
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file, abort
 
-# ââ Logging âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# Ã¢ÂÂÃ¢ÂÂ Logging Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='.', template_folder='.')
 
-# ââ Configuration (set as environment variables in Render.com) ââââââââââââââââ
+# Ã¢ÂÂÃ¢ÂÂ Configuration (set as environment variables in Render.com) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 AZURE_TENANT_ID     = os.environ.get("AZURE_TENANT_ID")
 AZURE_CLIENT_ID     = os.environ.get("AZURE_CLIENT_ID")
 AZURE_CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
@@ -46,7 +46,7 @@ WORKSHEET_NAME      = os.environ.get("WORKSHEET_NAME", "In Clinic Feedback")
 RATING_LABELS = {1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent"}
 
 
-# ââ Microsoft Graph helpers âââââââââââââââââââââââââââââââââââââââââââââââââââ
+# Ã¢ÂÂÃ¢ÂÂ Microsoft Graph helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 def is_graph_configured():
     return all([AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
@@ -96,12 +96,12 @@ def write_range(token, values, start_row):
 def ensure_headers(token):
     if get_used_row_count(token) == 0:
         write_range(token,
-                    [["Timestamp", "Date", "Time", "Therapist", "Rating", "Rating Label"]],
+                    [["Timestamp", "Date", "Time", "Clinic", "Therapist", "Rating", "Rating Label"]],
                     start_row=1)
         log.info("Header row written.")
 
 
-def append_to_onedrive(therapist, rating, timestamp_str):
+def append_to_onedrive(therapist, location, rating, timestamp_str):
     eastern = ZoneInfo("America/New_York")
     try:
         ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00")).astimezone(eastern)
@@ -116,17 +116,18 @@ def append_to_onedrive(therapist, rating, timestamp_str):
         timestamp_str,
         ts.strftime("%d %b %Y"),
         ts.strftime("%H:%M"),
+        location,
         therapist,
         rating,
         RATING_LABELS.get(rating, str(rating))
     ]], start_row=next_row)
 
-    log.info(f"Recorded to OneDrive: {therapist} â {rating} stars")
+    log.info(f"Recorded to OneDrive: {therapist} Ã¢ÂÂ {rating} stars")
 
 
-# ââ Local fallback (dev / unconfigured) âââââââââââââââââââââââââââââââââââââââ
+# Ã¢ÂÂÃ¢ÂÂ Local fallback (dev / unconfigured) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
-def append_local(therapist, rating, timestamp_str):
+def append_local(therapist, location, rating, timestamp_str):
     from openpyxl import Workbook, load_workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
@@ -144,8 +145,8 @@ def append_local(therapist, rating, timestamp_str):
     if not path.exists():
         wb = Workbook(); ws = wb.active; ws.title = WORKSHEET_NAME
         for i, (h, w) in enumerate(zip(
-            ["Timestamp","Date","Time","Therapist","Rating","Rating Label"],
-            [24,14,10,24,10,14]), 1):
+            ["Timestamp","Date","Time","Clinic","Therapist","Rating","Rating Label"],
+            [24,14,10,18,24,10,14]), 1):
             c = ws.cell(row=1, column=i, value=h)
             c.font = Font(name="Calibri", bold=True, color="FFFFFF", size=12)
             c.fill = PatternFill("solid", fgColor="2A435F")
@@ -161,7 +162,7 @@ def append_local(therapist, rating, timestamp_str):
     fill = PatternFill("solid", fgColor="E8ECF0") if r % 2 == 0 else None
     for i, v in enumerate([
         timestamp_str, ts.strftime("%d %b %Y"), ts.strftime("%H:%M"),
-        therapist, rating, RATING_LABELS.get(rating)], 1):
+        location, therapist, rating, RATING_LABELS.get(rating)], 1):
         c = ws.cell(row=r, column=i, value=v)
         c.font = Font(name="Calibri", size=11)
         c.alignment = Alignment(horizontal="center", vertical="center")
@@ -169,10 +170,10 @@ def append_local(therapist, rating, timestamp_str):
         if fill: c.fill = fill
     ws.row_dimensions[r].height = 22
     wb.save(path)
-    log.info(f"[LOCAL] Recorded: {therapist} â {rating} stars")
+    log.info(f"[LOCAL] Recorded: {therapist} Ã¢ÂÂ {rating} stars")
 
 
-# ââ Routes ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# Ã¢ÂÂÃ¢ÂÂ Routes Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 @app.route("/")
 def index():
@@ -183,21 +184,22 @@ def index():
 def submit():
     data      = request.get_json(silent=True) or {}
     therapist = data.get("therapist", "").strip()
+    location  = data.get("location", "").strip()
     rating    = data.get("rating")
     timestamp = data.get("timestamp", datetime.now(tz=timezone.utc).isoformat())
 
     if not therapist:
         return jsonify({"error": "Therapist is required"}), 400
     if not isinstance(rating, int) or rating not in range(1, 6):
-        return jsonify({"error": "Rating must be 1â5"}), 400
+        return jsonify({"error": "Rating must be 1Ã¢ÂÂ5"}), 400
 
     try:
         if is_graph_configured():
-            append_to_onedrive(therapist, rating, timestamp)
+            append_to_onedrive(therapist, location, rating, timestamp)
             storage = "onedrive"
         else:
-            log.warning("Graph API not configured â using local fallback.")
-            append_local(therapist, rating, timestamp)
+            log.warning("Graph API not configured Ã¢ÂÂ using local fallback.")
+            append_local(therapist, location, rating, timestamp)
             storage = "local"
 
         return jsonify({"status": "success", "therapist": therapist,
@@ -205,7 +207,7 @@ def submit():
 
     except Exception as e:
         log.error(f"Submit failed: {e}")
-        return jsonify({"error": "Failed to record â please try again"}), 500
+        return jsonify({"error": "Failed to record Ã¢ÂÂ please try again"}), 500
 
 
 @app.route("/dashboard")
@@ -225,9 +227,9 @@ def dashboard():
             all_rows = res.json().get("values", [])
             for row in all_rows[1:]:
                 if len(row) >= 5 and row[3]:
-                    rows.append({"date": row[1] or "â", "time": row[2] or "â",
-                                 "therapist": row[3], "rating": int(row[4] or 0),
-                                 "label": row[5] if len(row) > 5 else "â"})
+                    rows.append({"date": row[1] or "Ã¢ÂÂ", "time": row[2] or "Ã¢ÂÂ",
+                                 "clinic": row[3], "therapist": row[4], "rating": int(row[5] or 0),
+                                 "label": row[6] if len(row) > 6 else "Ã¢ÂÂ"})
         except Exception as e:
             log.error(f"Dashboard fetch error: {e}")
 
@@ -247,7 +249,7 @@ def dashboard():
         f"<tr><td>{n}</td><td>{s['count']}</td>"
         f"<td>{round(s['total']/s['count'],1)}</td>"
         f"<td style='color:#b8963e;letter-spacing:2px'>"
-        f"{'â'*int(round(s['total']/s['count']))}{'â'*(5-int(round(s['total']/s['count'])))}"
+        f"{'Ã¢ÂÂ'*int(round(s['total']/s['count']))}{'Ã¢ÂÂ'*(5-int(round(s['total']/s['count'])))}"
         f"</td></tr>"
         for n, s in sorted(t_stats.items())
     ) or "<tr><td colspan='4' style='text-align:center;color:#aaa'>No data yet</td></tr>"
@@ -255,7 +257,7 @@ def dashboard():
     r_rows = "".join(
         f"<tr><td>{r['date']}</td><td>{r['time']}</td><td>{r['therapist']}</td>"
         f"<td>{r['rating']}/5</td>"
-        f"<td style='color:#b8963e'>{'â'*r['rating']}{'â'*(5-r['rating'])}</td></tr>"
+        f"<td style='color:#b8963e'>{'Ã¢ÂÂ'*r['rating']}{'Ã¢ÂÂ'*(5-r['rating'])}</td></tr>"
         for r in reversed(rows[-20:])
     ) or "<tr><td colspan='5' style='text-align:center;color:#aaa'>No responses yet</td></tr>"
 
@@ -282,8 +284,8 @@ tr:last-child td{{border-bottom:none}}
 h2{{font-size:18px;font-weight:400;margin-bottom:12px}}
 </style></head><body>
 <h1>PHS In Clinic Feedback Dashboard</h1>
-<p class="sub">Updated in real time Â· {datetime.now().strftime('%d %b %Y %H:%M')}</p>
-<p class="store">â {storage}</p>
+<p class="sub">Updated in real time ÃÂ· {datetime.now().strftime('%d %b %Y %H:%M')}</p>
+<p class="store">Ã¢ÂÂ {storage}</p>
 <div class="stats">
   <div class="stat"><div class="num">{total}</div><div class="lbl">Total Responses</div></div>
   <div class="stat"><div class="num">{avg}</div><div class="lbl">Average Rating</div></div>
