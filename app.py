@@ -1,26 +1,30 @@
 """
-PHS Patient Feedback Kiosk — Backend
+PHS Patient Feedback Kiosk â Backend
 =====================================
 Serves the kiosk frontend and records every submission
 directly to an Excel file in Microsoft OneDrive via the
-Microsoft Graph API. Data is permanent — no local file,
+Microsoft Graph API. Data is permanent â no local file,
 no data loss risk, no weekly downloads required.
 
 Endpoints:
-  GET  /           → Serves the kiosk HTML
-  POST /submit     → Records feedback to OneDrive Excel
-  GET  /dashboard  → Password-protected live summary
-  GET  /health     → Service status
+  GET  /           â Serves the kiosk HTML
+  POST /submit     â Records feedback to OneDrive Excel
+  GET  /dashboard  â Password-protected live summary
+  GET  /health     â Service status
 """
 
 import os
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file, abort
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+# ââ Logging âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -30,7 +34,7 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='.', template_folder='.')
 
-# ── Configuration (set as environment variables in Render.com) ────────────────
+# ââ Configuration (set as environment variables in Render.com) ââââââââââââââââ
 AZURE_TENANT_ID     = os.environ.get("AZURE_TENANT_ID")
 AZURE_CLIENT_ID     = os.environ.get("AZURE_CLIENT_ID")
 AZURE_CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
@@ -42,7 +46,7 @@ WORKSHEET_NAME      = os.environ.get("WORKSHEET_NAME", "In Clinic Feedback")
 RATING_LABELS = {1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent"}
 
 
-# ── Microsoft Graph helpers ───────────────────────────────────────────────────
+# ââ Microsoft Graph helpers âââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 def is_graph_configured():
     return all([AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
@@ -98,10 +102,11 @@ def ensure_headers(token):
 
 
 def append_to_onedrive(therapist, rating, timestamp_str):
+    eastern = ZoneInfo("America/New_York")
     try:
-        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00")).astimezone(eastern)
     except Exception:
-        ts = datetime.utcnow()
+        ts = datetime.now(tz=eastern)
 
     token = get_access_token()
     ensure_headers(token)
@@ -116,10 +121,10 @@ def append_to_onedrive(therapist, rating, timestamp_str):
         RATING_LABELS.get(rating, str(rating))
     ]], start_row=next_row)
 
-    log.info(f"Recorded to OneDrive: {therapist} — {rating} stars")
+    log.info(f"Recorded to OneDrive: {therapist} â {rating} stars")
 
 
-# ── Local fallback (dev / unconfigured) ───────────────────────────────────────
+# ââ Local fallback (dev / unconfigured) âââââââââââââââââââââââââââââââââââââââ
 
 def append_local(therapist, rating, timestamp_str):
     from openpyxl import Workbook, load_workbook
@@ -127,10 +132,11 @@ def append_local(therapist, rating, timestamp_str):
     from openpyxl.utils import get_column_letter
 
     path = Path("in_clinic_feedback_local.xlsx")
+    eastern = ZoneInfo("America/New_York")
     try:
-        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00")).astimezone(eastern)
     except Exception:
-        ts = datetime.utcnow()
+        ts = datetime.now(tz=eastern)
 
     thin = Side(style="thin", color="CCCCCC")
     bdr  = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -163,10 +169,10 @@ def append_local(therapist, rating, timestamp_str):
         if fill: c.fill = fill
     ws.row_dimensions[r].height = 22
     wb.save(path)
-    log.info(f"[LOCAL] Recorded: {therapist} — {rating} stars")
+    log.info(f"[LOCAL] Recorded: {therapist} â {rating} stars")
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ââ Routes ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 @app.route("/")
 def index():
@@ -178,19 +184,19 @@ def submit():
     data      = request.get_json(silent=True) or {}
     therapist = data.get("therapist", "").strip()
     rating    = data.get("rating")
-    timestamp = data.get("timestamp", datetime.utcnow().isoformat())
+    timestamp = data.get("timestamp", datetime.now(tz=timezone.utc).isoformat())
 
     if not therapist:
         return jsonify({"error": "Therapist is required"}), 400
     if not isinstance(rating, int) or rating not in range(1, 6):
-        return jsonify({"error": "Rating must be 1–5"}), 400
+        return jsonify({"error": "Rating must be 1â5"}), 400
 
     try:
         if is_graph_configured():
             append_to_onedrive(therapist, rating, timestamp)
             storage = "onedrive"
         else:
-            log.warning("Graph API not configured — using local fallback.")
+            log.warning("Graph API not configured â using local fallback.")
             append_local(therapist, rating, timestamp)
             storage = "local"
 
@@ -199,7 +205,7 @@ def submit():
 
     except Exception as e:
         log.error(f"Submit failed: {e}")
-        return jsonify({"error": "Failed to record — please try again"}), 500
+        return jsonify({"error": "Failed to record â please try again"}), 500
 
 
 @app.route("/dashboard")
@@ -219,9 +225,9 @@ def dashboard():
             all_rows = res.json().get("values", [])
             for row in all_rows[1:]:
                 if len(row) >= 5 and row[3]:
-                    rows.append({"date": row[1] or "—", "time": row[2] or "—",
+                    rows.append({"date": row[1] or "â", "time": row[2] or "â",
                                  "therapist": row[3], "rating": int(row[4] or 0),
-                                 "label": row[5] if len(row) > 5 else "—"})
+                                 "label": row[5] if len(row) > 5 else "â"})
         except Exception as e:
             log.error(f"Dashboard fetch error: {e}")
 
@@ -241,7 +247,7 @@ def dashboard():
         f"<tr><td>{n}</td><td>{s['count']}</td>"
         f"<td>{round(s['total']/s['count'],1)}</td>"
         f"<td style='color:#b8963e;letter-spacing:2px'>"
-        f"{'★'*int(round(s['total']/s['count']))}{'☆'*(5-int(round(s['total']/s['count'])))}"
+        f"{'â'*int(round(s['total']/s['count']))}{'â'*(5-int(round(s['total']/s['count'])))}"
         f"</td></tr>"
         for n, s in sorted(t_stats.items())
     ) or "<tr><td colspan='4' style='text-align:center;color:#aaa'>No data yet</td></tr>"
@@ -249,7 +255,7 @@ def dashboard():
     r_rows = "".join(
         f"<tr><td>{r['date']}</td><td>{r['time']}</td><td>{r['therapist']}</td>"
         f"<td>{r['rating']}/5</td>"
-        f"<td style='color:#b8963e'>{'★'*r['rating']}{'☆'*(5-r['rating'])}</td></tr>"
+        f"<td style='color:#b8963e'>{'â'*r['rating']}{'â'*(5-r['rating'])}</td></tr>"
         for r in reversed(rows[-20:])
     ) or "<tr><td colspan='5' style='text-align:center;color:#aaa'>No responses yet</td></tr>"
 
@@ -276,8 +282,8 @@ tr:last-child td{{border-bottom:none}}
 h2{{font-size:18px;font-weight:400;margin-bottom:12px}}
 </style></head><body>
 <h1>PHS In Clinic Feedback Dashboard</h1>
-<p class="sub">Updated in real time · {datetime.now().strftime('%d %b %Y %H:%M')}</p>
-<p class="store">✓ {storage}</p>
+<p class="sub">Updated in real time Â· {datetime.now().strftime('%d %b %Y %H:%M')}</p>
+<p class="store">â {storage}</p>
 <div class="stats">
   <div class="stat"><div class="num">{total}</div><div class="lbl">Total Responses</div></div>
   <div class="stat"><div class="num">{avg}</div><div class="lbl">Average Rating</div></div>
