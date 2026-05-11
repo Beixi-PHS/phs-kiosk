@@ -34,7 +34,7 @@
       pointer-events: none;
     }
 
-    /* ── Screens ──────────────────────────────────────────────────────────── */
+    /* ââ Screens ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .screen {
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
@@ -47,7 +47,7 @@
     .screen.active { opacity: 1; transform: translateY(0); pointer-events: all; }
     .screen.exit   { opacity: 0; transform: translateY(-20px); pointer-events: none; }
 
-    /* ── Brand ────────────────────────────────────────────────────────────── */
+    /* ââ Brand ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .brand {
       position: fixed; top: 32px; left: 0; right: 0;
       text-align: center;
@@ -57,7 +57,7 @@
       color: rgba(255,255,255,0.38);
     }
 
-    /* ── Typography ───────────────────────────────────────────────────────── */
+    /* ââ Typography âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .page-title {
       font-family: 'Cormorant Garamond', serif;
       font-size: clamp(28px, 4.5vw, 46px);
@@ -79,7 +79,7 @@
       width: 100%; max-width: 760px;
     }
 
-    /* ── Location grid ────────────────────────────────────────────────────── */
+    /* ââ Location grid ââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .location-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -108,7 +108,7 @@
       font-weight: 500;
     }
 
-    /* ── Therapist grid ───────────────────────────────────────────────────── */
+    /* ââ Therapist grid âââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .therapist-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -117,7 +117,7 @@
       margin-bottom: 0;
     }
 
-    /* Fewer therapists → fewer columns */
+    /* Fewer therapists â fewer columns */
     .therapist-grid.cols-2 { grid-template-columns: repeat(2, 1fr); max-width: 420px; }
     .therapist-grid.cols-3 { grid-template-columns: repeat(3, 1fr); max-width: 580px; }
     .therapist-grid.cols-5 { grid-template-columns: repeat(5, 1fr); max-width: 900px; }
@@ -144,7 +144,7 @@
       font-weight: 500;
     }
 
-    /* ── Stars ────────────────────────────────────────────────────────────── */
+    /* ââ Stars ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .stars-row {
       display: flex; align-items: center;
       gap: 8px; margin-bottom: 6px;
@@ -168,14 +168,14 @@
       text-align: center; width: 100%; max-width: 760px;
     }
 
-    /* ── Main screen layout ───────────────────────────────────────────────── */
+    /* ââ Main screen layout âââââââââââââââââââââââââââââââââââââââââââââââââ */
     #screen-main {
       padding-top: 72px;
       justify-content: flex-start;
       gap: 0;
     }
 
-    /* ── Submit ───────────────────────────────────────────────────────────── */
+    /* ââ Submit âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .submit-btn {
       background: var(--white); color: var(--navy);
       border: none; padding: 18px 60px;
@@ -195,7 +195,7 @@
       text-align: center; margin-top: 10px; height: 16px;
     }
 
-    /* ── Divider between sections on main screen ──────────────────────────── */
+    /* ââ Divider between sections on main screen ââââââââââââââââââââââââââââ */
     .section-divider {
       width: 100%; max-width: 760px;
       height: 1px;
@@ -203,7 +203,7 @@
       margin: 24px 0 28px;
     }
 
-    /* ── Thank you ────────────────────────────────────────────────────────── */
+    /* ââ Thank you ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
     .thank-icon {
       font-size: 56px; margin-bottom: 20px;
       animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
@@ -240,11 +240,11 @@
 
   <div class="brand">Pelvic Health Solutions</div>
 
-  <!-- ── Main screen ────────────────────────────────────────────────────── -->
+  <!-- ââ Main screen ââââââââââââââââââââââââââââââââââââââââââââââââââââââ -->
   <div class="screen active" id="screen-main">
 
     <div class="page-title">How was your visit today?</div>
-    <div class="page-sub">Select your location, therapist, and rating — takes seconds.</div>
+    <div class="page-sub">Select your location, therapist, and rating â takes seconds.</div>
 
     <!-- Location -->
     <div class="section-label">Your location</div>
@@ -261,11 +261,11 @@
     <!-- Stars (always visible) -->
     <div class="section-label" id="label-stars" style="opacity:0">Your experience</div>
     <div class="stars-row" id="stars">
-      <span class="star" data-val="1">★</span>
-      <span class="star" data-val="2">★</span>
-      <span class="star" data-val="3">★</span>
-      <span class="star" data-val="4">★</span>
-      <span class="star" data-val="5">★</span>
+      <span class="star" data-val="1">â</span>
+      <span class="star" data-val="2">â</span>
+      <span class="star" data-val="3">â</span>
+      <span class="star" data-val="4">â</span>
+      <span class="star" data-val="5">â</span>
     </div>
     <div class="rating-label" id="rating-label" style="opacity:0"></div>
 
@@ -276,9 +276,9 @@
 
   </div>
 
-  <!-- ── Thank you screen ───────────────────────────────────────────────── -->
+  <!-- ââ Thank you screen âââââââââââââââââââââââââââââââââââââââââââââââââ -->
   <div class="screen" id="screen-thanks">
-    <div class="thank-icon">✦</div>
+    <div class="thank-icon">â¦</div>
     <div class="thank-headline">Thank you.</div>
     <div class="thank-sub">Your feedback means a great deal to us.</div>
     <div class="countdown-ring">
@@ -291,9 +291,9 @@
   </div>
 
   <script>
-    // ══════════════════════════════════════════════════════════════════════
-    // THERAPISTS BY LOCATION — update names here
-    // ══════════════════════════════════════════════════════════════════════
+    // ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // THERAPISTS BY LOCATION â update names here
+    // ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     const LOCATIONS = {
       "Palm Beach Gardens": [
         "Sarah Christian",
@@ -317,7 +317,7 @@
         "Marisol Martinez"
       ]
     };
-    // ══════════════════════════════════════════════════════════════════════
+    // ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
     const RATING_LABELS = { 1:"Poor", 2:"Fair", 3:"Good", 4:"Very Good", 5:"Excellent" };
 
@@ -326,7 +326,7 @@
     let selectedRating    = null;
     let countdownTimer    = null;
 
-    // ── Build location buttons ────────────────────────────────────────────
+    // ââ Build location buttons ââââââââââââââââââââââââââââââââââââââââââââ
     const locationGrid = document.getElementById('location-grid');
     Object.keys(LOCATIONS).forEach(loc => {
       const btn       = document.createElement('button');
@@ -336,7 +336,7 @@
       locationGrid.appendChild(btn);
     });
 
-    // ── Location selection ────────────────────────────────────────────────
+    // ââ Location selection ââââââââââââââââââââââââââââââââââââââââââââââââ
     function selectLocation(loc, btn) {
       selectedLocation  = loc;
       selectedTherapist = null;
@@ -362,7 +362,7 @@
       clearError();
     }
 
-    // ── Build therapist grid ──────────────────────────────────────────────
+    // ââ Build therapist grid ââââââââââââââââââââââââââââââââââââââââââââââ
     function buildTherapistGrid(therapists) {
       const grid      = document.getElementById('therapist-grid');
       grid.innerHTML  = '';
@@ -384,7 +384,7 @@
       });
     }
 
-    // ── Therapist selection ───────────────────────────────────────────────
+    // ââ Therapist selection âââââââââââââââââââââââââââââââââââââââââââââââ
     function selectTherapist(name, btn) {
       selectedTherapist = name;
       document.querySelectorAll('.therapist-btn').forEach(b => b.classList.remove('selected'));
@@ -393,7 +393,7 @@
       maybeShowSubmit();
     }
 
-    // ── Star interactions ─────────────────────────────────────────────────
+    // ââ Star interactions âââââââââââââââââââââââââââââââââââââââââââââââââ
     const stars = document.querySelectorAll('.star');
     stars.forEach(star => {
       star.addEventListener('touchstart', e => {
@@ -435,7 +435,7 @@
       }
     }
 
-    // ── Submit ────────────────────────────────────────────────────────────
+    // ââ Submit ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     async function submitFeedback() {
       if (!selectedLocation || !selectedTherapist || !selectedRating) {
         document.getElementById('error-msg').textContent =
@@ -445,26 +445,22 @@
         return;
       }
 
-      try {
-        await fetch('/submit', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            location:  selectedLocation,
-            therapist: selectedTherapist,
-            rating:    selectedRating,
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (e) {
-        console.warn('Submit error (non-blocking):', e);
-      }
-
+      // Fire-and-forget: show thank-you screen immediately, write to Excel in background
       goTo('screen-thanks');
       startCountdown();
+      fetch('/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          location:  selectedLocation,
+          therapist: selectedTherapist,
+          rating:    selectedRating,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(e => console.warn('Submit error (non-blocking):', e));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ââ Helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     function fadeIn(id) {
       document.getElementById(id).style.opacity = '1';
       document.getElementById(id).style.transition = 'opacity 0.3s ease';
